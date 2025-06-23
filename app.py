@@ -1,95 +1,88 @@
+import streamlit as st
 from pptx import Presentation
-from pptx.util import Inches, Pt
 from io import BytesIO
+import datetime
 
-def generate_pptx():
-    prs = Presentation()
+# Functie om placeholders in tekst te vervangen
+def vervang_tekst(tekst, vervangingen):
+    for sleutel, waarde in vervangingen.items():
+        tekst = tekst.replace(f"{{{{{sleutel}}}}}", str(waarde))
+    return tekst
 
-    # Slide 1 – Titelpagina
-    slide_layout = prs.slide_layouts[0]
-    slide = prs.slides.add_slide(slide_layout)
-    slide.shapes.title.text = f"Instructieboek: {projectnaam}"
-    slide.placeholders[1].text = f"Student: {naam} - {studentnummer}"
+# Functie om een presentatie te genereren op basis van sjabloon
+def genereer_powerpoint(vervangingen, template_path="Verslag Praktijkopdracht stappenplan variant (003).pptx"):
+    prs = Presentation(template_path)
 
-    # Slide 2 – Gegevens
-    slide = prs.slides.add_slide(prs.slide_layouts[1])
-    slide.shapes.title.text = "Gegevens"
-    content = (
-        f"Naam: {naam}\n"
-        f"Studentnummer: {studentnummer}\n"
-        f"Project: {projectnaam}\n"
-        f"Locatie: {locatie}\n"
-        f"Leerbedrijf: {leerbedrijf}\n"
-        f"Leermeester: {leermeester}\n"
-        f"Inleverdatum: {inleverdatum}"
-    )
-    slide.placeholders[1].text = content
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if shape.has_text_frame:
+                originele_tekst = shape.text
+                nieuwe_tekst = vervang_tekst(originele_tekst, vervangingen)
+                if originele_tekst != nieuwe_tekst:
+                    shape.text = nieuwe_tekst
 
-    # Slide 3 – Praktijkopdracht
-    slide = prs.slides.add_slide(prs.slide_layouts[1])
-    slide.shapes.title.text = "Over de Praktijkopdracht"
-    opdracht_info = (
-        f"Opdracht: {opdracht}\n\n"
-        f"Wat heb je gemaakt: {wat_gemaakt}\n\n"
-        f"Waarom: {waarom_gemaakt}\n\n"
-        f"Type werk: {type_werk}\n"
-        f"Werksituatie: {werksituatie}\n"
-        f"Ploeggrootte: {ploeggrootte}"
-    )
-    slide.placeholders[1].text = opdracht_info
-
-    # Slide 4 – Risico's
-    slide = prs.slides.add_slide(prs.slide_layouts[1])
-    slide.shapes.title.text = "Risico's en Maatregelen"
-    slide.placeholders[1].text = f"Risico’s:\n{risicos}\n\nMaatregelen:\n{maatregelen}"
-
-    # Slides 5+ – Stappenplan
-    for i in range(1, 11):
-        titel = st.session_state.get(f"stap{i}_titel", "")
-        wat = st.session_state.get(f"stap{i}_wat", "")
-        waarom = st.session_state.get(f"stap{i}_waarom", "")
-        leer = st.session_state.get(f"stap{i}_leer", "")
-        instructie = st.session_state.get(f"stap{i}_instructie", "")
-        letop = st.session_state.get(f"stap{i}_letop", "")
-        if titel.strip() == "" and wat.strip() == "":
-            continue  # sla lege stappen over
-
-        slide = prs.slides.add_slide(prs.slide_layouts[1])
-        slide.shapes.title.text = f"Stap {i}: {titel}"
-        slide.placeholders[1].text = (
-            f"Wat gedaan: {wat}\n\n"
-            f"Waarom: {waarom}\n\n"
-            f"Leerpunten: {leer}\n\n"
-            f"Instructie: {instructie}\n\n"
-            f"Let op!: {letop}"
-        )
-
-    # Slide – Reflectie
-    slide = prs.slides.add_slide(prs.slide_layouts[1])
-    slide.shapes.title.text = "Reflectie"
-    reflectie_text = (
-        st.session_state.get("Hoeveel hulp had je nodig en wat kon je zelfstandig?", "") + "\n" +
-        st.session_state.get("Wanneer stuurde een collega je bij?", "") + "\n" +
-        st.session_state.get("Welke tips heb je gekregen?", "") + "\n" +
-        st.session_state.get("Wat waren je leerpunten?", "") + "\n" +
-        st.session_state.get("Wat waren je sterke punten?", "")
-    )
-    slide.placeholders[1].text = reflectie_text
-
-    # Opslaan naar buffer
     buffer = BytesIO()
     prs.save(buffer)
     buffer.seek(0)
     return buffer
 
-# Download knop
-st.subheader("⬇️ Download jouw PowerPoint")
-if st.button("Genereer PowerPoint (.pptx)"):
-    pptx_file = generate_pptx()
-    st.download_button(
-        label="Download PowerPoint",
-        data=pptx_file,
-        file_name="instructieboek_praktijkopdracht.pptx",
-        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    )
+# --- Streamlit app interface ---
+st.title("🛠️ Praktijkopdracht PowerPoint Generator")
+
+st.markdown("Vul hieronder de gegevens in. De PowerPoint wordt automatisch ingevuld op basis van jouw sjabloon.")
+
+# Gegevens invullen
+naam = st.text_input("Naam student")
+studentnummer = st.text_input("Studentnummer")
+project = st.text_input("Projectnaam")
+locatie = st.text_input("Locatie project")
+leerbedrijf = st.text_input("Leerbedrijf")
+leermeester = st.text_input("Leermeester")
+inleverdatum = st.date_input("Inleverdatum", datetime.date.today())
+
+# Praktijkopdracht info
+opdracht = st.text_area("Welke praktijkopdracht heb je gemaakt?")
+wat_gemaakt = st.text_area("Wat heb je gemaakt?")
+waarom = st.text_area("Waarom heb je deze praktijkopdracht gekozen?")
+type_werk = st.text_input("Wat voor type werk was het?")
+werksituatie = st.text_area("Hoe was de werksituatie?")
+ploeggrootte = st.text_input("Hoe groot was je ploeg?")
+
+# Risico’s en maatregelen
+risicos = st.text_area("Beschrijf de risico’s")
+maatregelen = st.text_area("Welke maatregelen heb je genomen?")
+
+# Verzamelen van alle placeholders en bijbehorende waarden
+vervangingen = {
+    "naam": naam,
+    "studentnummer": studentnummer,
+    "project": project,
+    "locatie": locatie,
+    "leerbedrijf": leerbedrijf,
+    "leermeester": leermeester,
+    "inleverdatum": inleverdatum.strftime('%d-%m-%Y'),
+    "opdracht": opdracht,
+    "wat_gemaakt": wat_gemaakt,
+    "waarom": waarom,
+    "type_werk": type_werk,
+    "werksituatie": werksituatie,
+    "ploeggrootte": ploeggrootte,
+    "risicos": risicos,
+    "maatregelen": maatregelen
+}
+
+# Downloadknop
+st.subheader("⬇️ Download jouw ingevulde PowerPoint")
+
+if st.button("📤 Genereer PowerPoint"):
+    try:
+        pptx_bestand = genereer_powerpoint(vervangingen)
+        st.download_button(
+            label="🎓 Download PowerPoint",
+            data=pptx_bestand,
+            file_name="praktijkopdracht_ingevuld.pptx",
+            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        )
+    except Exception as e:
+        st.error(f"Er is een fout opgetreden bij het genereren van de PowerPoint: {e}")
 
