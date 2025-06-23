@@ -129,10 +129,6 @@ def maak_pptx():
         p.font.size = Pt(18)
 
     # --- Dia 2 t/m 3 ---
-    # Omdat dia 4 ontbreekt, slides[0] = dia 1, slides[1] = dia 2, etc.
-    # Maar we hebben dia 4 eruit gehaald dus index verschuiving:
-    # Dia 2 = slides[1], Dia 3 = slides[2]
-    # Dia 1 is al gemaakt, dus hier slides[0] = dia 2, slides[1] = dia 3
     for slide_data in slides[:2]:
         if not slide_data["title"] and not slide_data["content"]:
             continue
@@ -213,7 +209,6 @@ def maak_pptx():
             slide.shapes.add_picture(slide_data["image"], Inches(7), Inches(1.5), Inches(2.5), Inches(2.5))
 
     # --- Dia 9 t/m 18 (vaste vragen ingevuld) ---
-    # Deze zitten in slides vanaf index 6 t/m 15 (want dia4 mist, en dia9 start bij slide index 6)
     for idx, i in enumerate(range(9, 19)):
         slide_data = slides[6 + idx]  # dia 9 t/m 18 in slides
         slide = prs.slides.add_slide(layout)
