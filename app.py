@@ -6,18 +6,19 @@ from io import BytesIO
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# Speciale code die je wil gebruiken
-SPECIAL_CODE = "5euro"
+SPECIAL_CODE = "mijngeheimecode123"
 
-if not st.session_state.logged_in:
-    st.title("Inloggen vereist")
-    code_input = st.text_input("Voer de speciale code in om door te gaan:", type="password")
+def login():
+    code_input = st.text_input("Voer de speciale code in om door te gaan:", type="password", key="login_code")
     if st.button("Inloggen"):
         if code_input == SPECIAL_CODE:
             st.session_state.logged_in = True
-            st.experimental_rerun()
         else:
             st.error("Verkeerde code, probeer opnieuw.")
+
+if not st.session_state.logged_in:
+    st.title("Inloggen vereist")
+    login()
 else:
     # --- JOUW HUIDIGE APP ---  
     st.title("Stappenplan Maker Gemaakt door Eddo.S")
@@ -153,5 +154,6 @@ else:
             )
         except Exception as e:
             st.error(f"Er is een fout opgetreden: {e}")
+
 
 
