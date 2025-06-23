@@ -6,7 +6,7 @@ from io import BytesIO
 import requests
 
 # Zet hier je keys neer (pas aan naar jouw echte keys)
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = "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"
 UNSPLASH_ACCESS_KEY = "YOUR_UNSPLASH_ACCESS_KEY"
 
 client = OpenAI(api_key=OPENAI_API_KEY)
