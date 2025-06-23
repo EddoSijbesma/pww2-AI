@@ -4,7 +4,7 @@ from pptx.util import Pt, Inches
 from pptx.dml.color import RGBColor
 from io import BytesIO
 
-st.title("PowerPoint Generator zonder AI — 10 stappen")
+st.title("PowerPoint Generator ")
 
 st.write("Plak hieronder je grote tekst. De app maakt 10 stappen-dia’s plus overige dia’s.")
 
