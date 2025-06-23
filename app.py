@@ -1,146 +1,136 @@
 import streamlit as st
-from pptx import Presentation
-from pptx.util import Inches, Pt
-from pptx.enum.text import PP_ALIGN
-from pptx.dml.color import RGBColor
-from io import BytesIO
-import openai
-import os
 import json
+from io import BytesIO
+from pptx import Presentation
+from pptx.util import Pt
+from pptx.enum.text import PP_ALIGN
 
-st.set_page_config(page_title="AI PowerPoint Generator", layout="wide")
-st.title("🤖 AI PowerPoint Generator voor Praktijkopdracht")
+def add_textbox(slide, text, left, top, width, height, font_size=12, bold=False):
+    txBox = slide.shapes.add_textbox(left, top, width, height)
+    tf = txBox.text_frame
+    p = tf.paragraphs[0]
+    p.text = text
+    p.font.size = Pt(font_size)
+    p.font.bold = bold
+    p.alignment = PP_ALIGN.LEFT
+    return txBox
 
-# --- OpenAI API key invoer (zorg dat je jouw API key invult of in omgeving zet) ---
-if "OPENAI_API_KEY" not in st.session_state:
-    st.session_state.OPENAI_API_KEY = ""
-
-def set_api_key():
-    st.session_state.OPENAI_API_KEY = st.text_input("Vul hier je OpenAI API key in (Begin met 'sk-'):", type="password")
-
-if not st.session_state.OPENAI_API_KEY:
-    set_api_key()
-    st.stop()
-
-openai.api_key = st.session_state.OPENAI_API_KEY
-
-# --- Stap 1: Algemene opdracht invoeren ---
-st.header("Stap 1: Voer de opdracht of het onderwerp in")
-
-opdracht = st.text_area(
-    "Typ hier de omschrijving van je praktijkopdracht of het onderwerp voor de presentatie.",
-    height=150
-)
-
-# --- Functie om AI te laten genereren ---
-def genereer_slides_via_ai(opdracht_tekst):
-    # Prompt om gestructureerde output te krijgen (JSON) voor slides
-    prompt = f"""
-Je bent een assistent die een PowerPoint-presentatie maakt voor een praktijkopdracht.
-Maak een presentatie van 20 dia's, inclusief titelpagina.
-Elke dia moet een titel en inhoud hebben met 3 tot 5 korte kernpunten.
-Lever de output in JSON met deze structuur:
-
-{{
-  "slides": [
-    {{
-      "title": "Titel van dia 1",
-      "content": ["punt 1", "punt 2", "..."]
-    }},
-    ...
-  ]
-}}
-
-De opdracht of het onderwerp is: "{opdracht_tekst}"
-
-Schrijf de JSON zonder extra uitleg.
-"""
-
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "Je bent een behulpzame presentatiegenerator."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.7,
-        max_tokens=1500,
-    )
-
-    text = response['choices'][0]['message']['content']
-
-    # Probeer JSON te parsen, fallback op leeg
-    try:
-        slides_data = json.loads(text)
-    except Exception as e:
-        st.error("Fout bij het parsen van de AI-output, probeer opnieuw.")
-        st.write(text)
-        return None
-
-    return slides_data.get("slides", [])
-
-# --- Functie om pptx te maken ---
-def maak_pptx(slides):
+def create_presentation(data):
     prs = Presentation()
-    layout = prs.slide_layouts[5]
 
-    for slide_data in slides:
-        slide = prs.slides.add_slide(layout)
+    # DIA 1: Gegevens
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    add_textbox(slide, "Gegevens", Pt(50), Pt(20), Pt(600), Pt(40), font_size=24, bold=True)
 
-        # Titel
-        title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(9), Inches(1))
-        tf = title_box.text_frame
-        p = tf.paragraphs[0]
-        p.text = slide_data.get("title", "")
-        p.font.size = Pt(32)
-        p.font.bold = True
-        p.font.color.rgb = RGBColor(0, 51, 102)
-        p.alignment = PP_ALIGN.CENTER
+    content = (
+        f"Naam student: {data['naam_student']}\n"
+        f"Studenten nummer: {data['studenten_nummer']}\n"
+        f"Naam project: {data['naam_project']}\n"
+        f"Locatie project: {data['locatie_project']}\n"
+        f"Leerbedrijf: {data['leerbedrijf']}\n"
+        f"Leermeester: {data['leermeester']}\n"
+        f"Inleverdatum: {data['inleverdatum']}\n"
+    )
+    add_textbox(slide, content, Pt(50), Pt(80), Pt(600), Pt(200), font_size=14)
 
-        # Content (lijst van punten)
-        content_box = slide.shapes.add_textbox(Inches(0.5), Inches(1.5), Inches(9), Inches(4))
-        tf_content = content_box.text_frame
-        tf_content.clear()  # Zorg dat het leeg is
+    # DIA 2: Praktijkopdracht
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    add_textbox(slide, "Welke praktijkopdracht heb je gemaakt?", Pt(50), Pt(20), Pt(600), Pt(40), font_size=20, bold=True)
 
-        inhoud_punten = slide_data.get("content", [])
-        for punt in inhoud_punten:
-            p = tf_content.add_paragraph()
-            p.text = punt
-            p.font.size = Pt(20)
-            p.level = 0
+    po = data['praktijkopdracht']
+    fields = [
+        ("Wat heb je gemaakt.", po.get('wat_heb_je_gemaakt', '')),
+        ("Waarom heb je deze praktijkopdracht gemaakt?", po.get('waarom', '')),
+        ("Wat voor type werk was het?", po.get('type_werk', '')),
+        ("Hoe was de werksituatie?", po.get('werksituatie', '')),
+        ("Hoe groot was je ploeg?", po.get('groot_ploeg', ''))
+    ]
 
+    top = 80
+    for label, tekst in fields:
+        text = f"{label}\n{tekst}"
+        add_textbox(slide, text, Pt(50), Pt(top), Pt(600), Pt(60), font_size=12)
+        top += 70
+
+    # DIA 3: Risico's
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    add_textbox(slide, "Beschrijf de risico’s bij deze praktijkopdracht\n(en de genomen maatregelen)", Pt(50), Pt(20), Pt(600), Pt(40), font_size=20, bold=True)
+
+    lefts = [Pt(50), Pt(300)]
+    tops = [Pt(80 + i*25) for i in range(8)]
+    widths = [Pt(230), Pt(230)]
+    heights = Pt(25)
+
+    add_textbox(slide, "Risico", lefts[0], Pt(50), widths[0], heights, font_size=14, bold=True)
+    add_textbox(slide, "Genomen maatregel", lefts[1], Pt(50), widths[1], heights, font_size=14, bold=True)
+
+    for i, item in enumerate(data['risicos']):
+        add_textbox(slide, item.get('risico', ''), lefts[0], tops[i], widths[0], heights, font_size=12)
+        add_textbox(slide, item.get('maatregel', ''), lefts[1], tops[i], widths[1], heights, font_size=12)
+
+    # DIA 4: Materiaalstaat
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    add_textbox(slide, "Materiaalstaat", Pt(50), Pt(20), Pt(600), Pt(40), font_size=20, bold=True)
+
+    lefts = [Pt(50), Pt(300), Pt(450)]
+    headers = ["Materiaal", "Maat", "Aantal"]
+    for i, header in enumerate(headers):
+        add_textbox(slide, header, lefts[i], Pt(50), Pt(140), Pt(25), font_size=14, bold=True)
+
+    tops = [Pt(80 + i*25) for i in range(12)]
+    for i, mat in enumerate(data['materiaalstaat']):
+        add_textbox(slide, mat.get('materiaal', ''), lefts[0], tops[i], Pt(140), Pt(25), font_size=12)
+        add_textbox(slide, mat.get('maat', ''), lefts[1], tops[i], Pt(100), Pt(25), font_size=12)
+        add_textbox(slide, mat.get('aantal', ''), lefts[2], tops[i], Pt(100), Pt(25), font_size=12)
+
+    # DIA 5: Gereedschapslijst
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    add_textbox(slide, "Gereedschapslijst", Pt(50), Pt(20), Pt(600), Pt(40), font_size=20, bold=True)
+
+    lefts = [Pt(50), Pt(350)]
+    headers = ["Gereedschap", "Gebruikt voor"]
+    for i, header in enumerate(headers):
+        add_textbox(slide, header, lefts[i], Pt(50), Pt(280), Pt(25), font_size=14, bold=True)
+
+    tops = [Pt(80 + i*25) for i in range(12)]
+    for i, gereedschap in enumerate(data['gereedschapslijst']):
+        add_textbox(slide, gereedschap.get('gereedschap', ''), lefts[0], tops[i], Pt(280), Pt(25), font_size=12)
+        add_textbox(slide, gereedschap.get('gebruikt_voor', ''), lefts[1], tops[i], Pt(280), Pt(25), font_size=12)
+
+    # Save presentation to BytesIO object
     output = BytesIO()
     prs.save(output)
     output.seek(0)
     return output
 
-# --- Knop om te genereren ---
-if st.button("🎉 Genereer PowerPoint met AI"):
-    if not opdracht.strip():
-        st.warning("Vul eerst de opdracht of het onderwerp in.")
-    else:
-        with st.spinner("AI is bezig met genereren... dit kan enkele seconden duren"):
-            slides = genereer_slides_via_ai(opdracht)
-            if slides:
-                pptx_file = maak_pptx(slides)
-                st.success("✅ PowerPoint succesvol gegenereerd!")
-                st.download_button(
-                    label="📥 Download PowerPoint",
-                    data=pptx_file,
-                    file_name="praktijkopdracht_ai_presentatie.pptx",
-                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                )
-            else:
-                st.error("Kon geen slides genereren.")
+st.title("PowerPoint Generator voor Praktijkopdrachten")
 
-# --- Optioneel: uitleg ---
-st.markdown("---")
-st.markdown(
-    """
-    **Uitleg:**  
-    - Vul je OpenAI API-key in (te vinden op https://platform.openai.com/account/api-keys).  
-    - Geef een duidelijke opdracht of onderwerp voor je praktijkopdracht.  
-    - Klik op de knop om automatisch 20 dia's te laten genereren door AI.  
-    - Download het PowerPoint-bestand en open het in PowerPoint of een compatible app.
-    """
-)
+st.write("""
+Upload een JSON bestand met je projectdata, of plak de JSON hieronder.
+De app genereert een PowerPoint-bestand dat je kunt downloaden.
+""")
+
+uploaded_file = st.file_uploader("Upload JSON bestand", type=["json"])
+
+json_text = None
+
+if uploaded_file is not None:
+    json_text = uploaded_file.read().decode("utf-8")
+else:
+    json_text = st.text_area("Of plak hier je JSON data", height=300)
+
+if json_text:
+    try:
+        data = json.loads(json_text)
+        if st.button("Genereer PowerPoint"):
+            pptx_io = create_presentation(data)
+            st.success("PowerPoint is aangemaakt!")
+            st.download_button(
+                label="Download PowerPoint",
+                data=pptx_io,
+                file_name="praktijkopdracht.pptx",
+                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            )
+    except Exception as e:
+        st.error(f"Fout bij verwerken JSON: {e}")
 
