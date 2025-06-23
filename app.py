@@ -2,7 +2,7 @@ import streamlit as st
 from pptx import Presentation
 from io import BytesIO
 
-st.title("Praktijkopdracht Instructieboek Generator")
+st.title("Stappenplan Maker Gemaakt door Eddo.S")
 
 # === FORMULIER ===
 st.header("📋 Gegevens")
