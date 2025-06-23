@@ -5,184 +5,127 @@ from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 from io import BytesIO
 
-st.set_page_config(page_title="PowerPoint Generator", layout="wide")
-st.title("📊 PowerPoint Generator zonder AI")
+st.set_page_config(page_title="AI PowerPoint Generator", layout="wide")
 
-# === Stap 1: Gegevens voor eerste dia ===
-st.header("🧾 Gegevens voor eerste dia")
+st.title("📊 AI PowerPoint Generator - Praktijkopdracht")
+st.markdown("Vul de gegevens in, inclusief risicoanalyse, en download een nette PowerPoint!")
 
-col1, col2 = st.columns(2)
-with col1:
-    student_naam = st.text_input("Naam student")
-    student_nummer = st.text_input("Studentnummer")
-    project_naam = st.text_input("Naam project")
-    praktijkopdracht_titel = st.text_input("Titel praktijkopdracht")
+# --- Formuliergegevens
+st.header("📌 Gegevens student & project")
+student_naam = st.text_input("Naam student")
+student_nummer = st.text_input("Studentnummer")
+project_naam = st.text_input("Naam project")
+project_locatie = st.text_input("Locatie project")
+leerbedrijf = st.text_input("Leerbedrijf")
+leermeester = st.text_input("Leermeester")
+inleverdatum = st.date_input("Inleverdatum")
 
-with col2:
-    project_locatie = st.text_input("Locatie project")
-    leerbedrijf = st.text_input("Leerbedrijf")
-    leermeester = st.text_input("Leermeester")
-    inleverdatum = st.date_input("Inleverdatum")
-
-# === Stap 2: Dia's invoeren ===
-st.header("📝 Dia's invoeren")
-
-slides = []
-for i in range(1, 26):
-    if i == 4:
-        continue  # Dia 4 is gereserveerd voor risico's en maatregelen
-    with st.expander(f"Dia {i}"):
-        title = st.text_input(f"🔹 Titel dia {i}", key=f"title_{i}")
-        content = st.text_area(f"✏️ Inhoud dia {i}", key=f"content_{i}")
-        image = st.file_uploader(f"📷 Afbeelding dia {i} (optioneel)", type=["png", "jpg", "jpeg"], key=f"img_{i}")
-        slides.append({
-            "title": title,
-            "content": content,
-            "image": image
-        })
-
-# === Stap 3: Dia 4 - Risico's en maatregelen ===
-st.header("⚠️ Dia 4 – Risicoanalyse (tabel)")
-
-st.markdown(
-    "_Beschrijf de risico’s bij deze praktijkopdracht (veiligheid, tijdsdruk, e.a.)_  \n"
-    "_En geef aan welke maatregelen je hebt getroffen om ze te beheersen._"
-)
-
+st.header("📊 Dia 4 - Risicoanalyse")
 risico_maatregelen = []
-cols = st.columns(2)
 for i in range(8):
-    with cols[0]:
+    col1, col2 = st.columns(2)
+    with col1:
         risico = st.text_input(f"Risico {i+1}", key=f"risico_{i}")
-    with cols[1]:
+    with col2:
         maatregel = st.text_input(f"Maatregel {i+1}", key=f"maatregel_{i}")
-    risico_maatregelen.append((risico, maatregel))
+    if risico or maatregel:
+        risico_maatregelen.append((risico, maatregel))
 
-# === Stap 4: PowerPoint genereren ===
+st.header("🖼️ Foto's toevoegen")
+uploaded_images = st.file_uploader("Upload afbeeldingen voor dia's (optioneel)", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+
+# --- PPTX genereren
 def maak_pptx():
     prs = Presentation()
     layout = prs.slide_layouts[5]
 
-    # Dia 1 – Titelpagina
+    # Dia 1: Titel
+    slide = prs.slides.add_slide(layout)
+    title_box = slide.shapes.add_textbox(Inches(1), Inches(2), Inches(8), Inches(1.5))
+    tf = title_box.text_frame
+    p = tf.paragraphs[0]
+    p.text = f"Stappenplan praktijkopdracht\n{project_naam}"
+    p.font.size = Pt(36)
+    p.font.bold = True
+    p.alignment = PP_ALIGN.CENTER
+
+    # Dia 2: Gegevens
+    slide = prs.slides.add_slide(layout)
+    textbox = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(5))
+    tf = textbox.text_frame
+    tf.text = "Projectgegevens"
+    tf.paragraphs[0].font.size = Pt(28)
+    tf.paragraphs[0].font.bold = True
+    tf.add_paragraph().text = f"Naam student: {student_naam}"
+    tf.add_paragraph().text = f"Studentnummer: {student_nummer}"
+    tf.add_paragraph().text = f"Naam project: {project_naam}"
+    tf.add_paragraph().text = f"Locatie project: {project_locatie}"
+    tf.add_paragraph().text = f"Leerbedrijf: {leerbedrijf}"
+    tf.add_paragraph().text = f"Leermeester: {leermeester}"
+    tf.add_paragraph().text = f"Inleverdatum: {inleverdatum}"
+
+    # Dia 3: Leeg met eventueel afbeelding
+    slide = prs.slides.add_slide(layout)
+    tf = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(1))
+    tf.text = "Introductie"
+    
+    # Dia 4: Risicoanalyse met mooie layout
     slide = prs.slides.add_slide(layout)
 
-    box1 = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(9), Inches(1))
-    tf1 = box1.text_frame
-    p = tf1.add_paragraph()
-    p.text = "Stappenplan praktijkopdracht"
-    p.font.size = Pt(36)
+    # Titel bovenaan
+    title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(9), Inches(1))
+    tf = title_box.text_frame
+    p = tf.add_paragraph()
+    p.text = "Risicoanalyse Praktijkopdracht"
+    p.font.size = Pt(32)
     p.font.bold = True
     p.font.color.rgb = RGBColor(0, 51, 102)
     p.alignment = PP_ALIGN.CENTER
 
-    box2 = slide.shapes.add_textbox(Inches(0.5), Inches(1.3), Inches(9), Inches(0.7))
-    tf2 = box2.text_frame
-    p2 = tf2.add_paragraph()
-    p2.text = praktijkopdracht_titel
-    p2.font.size = Pt(24)
-    p2.font.italic = True
-    p2.font.color.rgb = RGBColor(100, 100, 100)
-    p2.alignment = PP_ALIGN.CENTER
+    # Subtitel
+    sub_box = slide.shapes.add_textbox(Inches(0.5), Inches(1), Inches(9), Inches(0.6))
+    tf_sub = sub_box.text_frame
+    p_sub = tf_sub.add_paragraph()
+    p_sub.text = "Overzicht van risico’s en genomen maatregelen"
+    p_sub.font.size = Pt(20)
+    p_sub.font.italic = True
+    p_sub.font.color.rgb = RGBColor(90, 90, 90)
+    p_sub.alignment = PP_ALIGN.CENTER
 
-    box3 = slide.shapes.add_textbox(Inches(1), Inches(2.2), Inches(8), Inches(3))
-    tf3 = box3.text_frame
-    gegevens = [
-        f"Naam student: {student_naam}",
-        f"Studentnummer: {student_nummer}",
-        f"Naam project: {project_naam}",
-        f"Locatie project: {project_locatie}",
-        f"Leerbedrijf: {leerbedrijf}",
-        f"Leermeester: {leermeester}",
-        f"Inleverdatum: {inleverdatum.strftime('%d-%m-%Y')}"
-    ]
-    for regel in gegevens:
-        p = tf3.add_paragraph()
-        p.text = regel
-        p.font.size = Pt(18)
-
-    # Dia 2–3
-    for slide_data in slides[:2]:
-        slide = prs.slides.add_slide(layout)
-        title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(9), Inches(1))
-        tf = title_box.text_frame
-        p = tf.add_paragraph()
-        p.text = slide_data["title"]
-        p.font.size = Pt(28)
-        p.font.bold = True
-
-        content_box = slide.shapes.add_textbox(Inches(0.5), Inches(1.2), Inches(6.5), Inches(4))
-        tf2 = content_box.text_frame
-        p2 = tf2.add_paragraph()
-        p2.text = slide_data["content"]
-        p2.font.size = Pt(20)
-
-        if slide_data["image"]:
-            slide.shapes.add_picture(slide_data["image"], Inches(7), Inches(1.5), Inches(2.5), Inches(2.5))
-
-    # Dia 4 – Risicotabel
-    slide = prs.slides.add_slide(layout)
-    title_shape = slide.shapes.title
-    title_shape.text = "Risicoanalyse"
-
-    rows = len(risico_maatregelen) + 1
-    cols = 2
-    left = Inches(0.5)
-    top = Inches(1.5)
-    width = Inches(9)
-    height = Inches(4)
-
-    table = slide.shapes.add_table(rows, cols, left, top, width, height).table
-    table.columns[0].width = Inches(4.5)
-    table.columns[1].width = Inches(4.5)
-
-    table.cell(0, 0).text = "Risico"
-    table.cell(0, 1).text = "Genomen maatregel"
-
-    for col in range(cols):
-        cell = table.cell(0, col)
-        cell.text_frame.paragraphs[0].font.bold = True
-        cell.text_frame.paragraphs[0].font.size = Pt(16)
-
-    for i, (risico, maatregel) in enumerate(risico_maatregelen):
-        table.cell(i+1, 0).text = risico
-        table.cell(i+1, 1).text = maatregel
+    # Tabel
+    if risico_maatregelen:
+        rows = len(risico_maatregelen) + 1
+        cols = 2
+        table = slide.shapes.add_table(rows, cols, Inches(0.5), Inches(1.7), Inches(9), Inches(4.5)).table
+        table.columns[0].width = Inches(4.5)
+        table.columns[1].width = Inches(4.5)
+        table.cell(0, 0).text = "Risico"
+        table.cell(0, 1).text = "Genomen maatregel"
         for col in range(cols):
-            cell = table.cell(i+1, col)
-            cell.text_frame.paragraphs[0].font.size = Pt(14)
+            header_cell = table.cell(0, col)
+            header_cell.text_frame.paragraphs[0].font.bold = True
+            header_cell.text_frame.paragraphs[0].font.size = Pt(16)
+            header_cell.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+        for i, (risico, maatregel) in enumerate(risico_maatregelen):
+            table.cell(i+1, 0).text = risico
+            table.cell(i+1, 1).text = maatregel
 
-    # Dia 5 t/m 26
-    for slide_data in slides[2:]:
+    # Dia’s 5 t/m 25: lege dia’s of met afbeelding
+    for i in range(21):
         slide = prs.slides.add_slide(layout)
+        if i < len(uploaded_images):
+            image = uploaded_images[i]
+            slide.shapes.add_picture(image, Inches(1), Inches(1.5), width=Inches(7.5))
+        else:
+            tf = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(5)).text_frame
+            tf.text = f"Dia {i+5}"
 
-        title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(9), Inches(1))
-        tf = title_box.text_frame
-        p = tf.add_paragraph()
-        p.text = slide_data["title"]
-        p.font.size = Pt(28)
-        p.font.bold = True
+    return prs
 
-        content_box = slide.shapes.add_textbox(Inches(0.5), Inches(1.2), Inches(6.5), Inches(4))
-        tf2 = content_box.text_frame
-        p2 = tf2.add_paragraph()
-        p2.text = slide_data["content"]
-        p2.font.size = Pt(20)
-
-        if slide_data["image"]:
-            slide.shapes.add_picture(slide_data["image"], Inches(7), Inches(1.5), Inches(2.5), Inches(2.5))
-
-    # Opslaan
-    output = BytesIO()
-    prs.save(output)
-    output.seek(0)
-    return output
-
-if st.button("🎉 Genereer PowerPoint"):
-    pptx_bestand = maak_pptx()
+# --- Genereer en download
+if st.button("🎬 Genereer PowerPoint"):
+    prs = maak_pptx()
+    pptx_io = BytesIO()
+    prs.save(pptx_io)
     st.success("✅ PowerPoint gegenereerd!")
-    st.download_button(
-        label="📥 Download PowerPoint",
-        data=pptx_bestand,
-        file_name="presentatie.pptx",
-        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    )
-
+    st.download_button("📥 Download PowerPoint", data=pptx_io.getvalue(), file_name="praktijkopdracht.pptx")
