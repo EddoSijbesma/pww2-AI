@@ -64,11 +64,11 @@ def maak_pptx():
     tf.add_paragraph().text = f"Leermeester: {leermeester}"
     tf.add_paragraph().text = f"Inleverdatum: {inleverdatum}"
 
-    # Dia 3: Leeg met eventueel afbeelding
+    # Dia 3: Introductie
     slide = prs.slides.add_slide(layout)
-    tf = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(1))
-    tf.text = "Introductie"
-    
+    tf_intro = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(1)).text_frame
+    tf_intro.text = "Introductie"
+
     # Dia 4: Risicoanalyse met mooie layout
     slide = prs.slides.add_slide(layout)
 
@@ -110,15 +110,59 @@ def maak_pptx():
             table.cell(i+1, 0).text = risico
             table.cell(i+1, 1).text = maatregel
 
-    # Dia’s 5 t/m 25: lege dia’s of met afbeelding
-    for i in range(21):
+    # Dia 5 t/m 8: lege dia’s of met afbeelding
+    for i in range(5, 9):
         slide = prs.slides.add_slide(layout)
-        if i < len(uploaded_images):
-            image = uploaded_images[i]
+        img_idx = i - 5
+        if img_idx < len(uploaded_images):
+            image = uploaded_images[img_idx]
             slide.shapes.add_picture(image, Inches(1), Inches(1.5), width=Inches(7.5))
         else:
             tf = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(5)).text_frame
-            tf.text = f"Dia {i+5}"
+            tf.text = f"Dia {i}"
+
+    # Dia 9 t/m 18: vaste template met vaste tekstvelden
+    for i in range(9, 19):
+        slide = prs.slides.add_slide(layout)
+        
+        # Titel
+        title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(9), Inches(0.8))
+        tf = title_box.text_frame
+        p = tf.add_paragraph()
+        p.text = f"Stap 1 – Lezen en begrijpen van de werktekening (Dia {i})"
+        p.font.size = Pt(28)
+        p.font.bold = True
+        p.font.color.rgb = RGBColor(0, 51, 102)
+        
+        # Tekstvakken met vaste prompts
+        top_start = 1.3
+        texts = [
+            "Beschrijf hier wat je hebt gedaan.",
+            "Waarom heb je het zo gedaan.",
+            "Wat is was een leerpunt.",
+            "Instructies voor je collega (wat is belangrijk om op te letten?).",
+            "Je kunt hierbij ook pijltjes toevoegen.",
+            "Voeg een “let op!” toe vanuit de deelopdracht."
+        ]
+        
+        for idx, txt in enumerate(texts):
+            box = slide.shapes.add_textbox(Inches(0.5), Inches(top_start + idx * 0.8), Inches(9), Inches(0.7))
+            tf_box = box.text_frame
+            p_box = tf_box.add_paragraph()
+            p_box.text = txt
+            p_box.font.size = Pt(18)
+            p_box.font.color.rgb = RGBColor(30, 30, 30)
+
+    # Dia 19 t/m 25: lege dia’s of met afbeelding
+    for i in range(19, 26):
+        slide = prs.slides.add_slide(layout)
+        img_idx = i - 19 + 4  # start vanaf 4e afbeelding (eerste 4 al gebruikt)
+        if img_idx < len(uploaded_images):
+            image = uploaded_images[img_idx]
+            slide.shapes.add_picture(image, Inches(1), Inches(1.5), width=Inches(7.5))
+        else:
+            tf = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(5)).text_frame
+            tf.text = f"Dia {i}"
 
     return prs
 
