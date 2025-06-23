@@ -7,7 +7,8 @@ import openai
 import os
 import json
 
-openai.api_key = os.getenv("OPENAI_API_KEY")  # Zorg dat je hier je API key hebt staan
+# Zet hier je OpenAI API key, of gebruik environment variable OPENAI_API_KEY
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def add_textbox(slide, text, left, top, width, height, font_size=12, bold=False):
     txBox = slide.shapes.add_textbox(left, top, width, height)
@@ -57,13 +58,13 @@ Hier is de tekst:
 
 Geef alleen het JSON object terug.
 """
-    response = openai.ChatCompletion.create(
+    response = openai.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
         temperature=0,
         max_tokens=1000
     )
-    content = response['choices'][0]['message']['content']
+    content = response.choices[0].message.content
     return content
 
 def create_presentation(data):
@@ -194,3 +195,4 @@ if st.button("Genereer PowerPoint"):
                 )
             except Exception as e:
                 st.error(f"Er ging iets mis: {e}")
+
