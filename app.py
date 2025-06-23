@@ -5,12 +5,12 @@ from pptx import Presentation
 from pptx.util import Inches
 import requests
 
-# Jouw OpenAI API sleutel
-client = OpenAI(api_key="sk-proj-UX4O2nJnRW_vK8uz5ogtMzGh-...")
+# Gebruik hier jouw API key
+client = OpenAI(api_key="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")
 
 UNSPLASH_ACCESS_KEY = "jouw_unsplash_key"
 
-st.title("AI PowerPoint Generator (OpenAI SDK 1.x)")
+st.title("AI PowerPoint Generator")
 
 topic = st.text_input("Onderwerp")
 num_slides = st.slider("Aantal dia's", 3, 20, 5)
@@ -86,4 +86,3 @@ if st.button("Genereer PowerPoint"):
             )
         except Exception as e:
             st.error(f"Fout bij genereren: {e}")
-
