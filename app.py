@@ -3,12 +3,11 @@ from openai import OpenAI
 import os
 from utils import search_unsplash_image, create_styled_pptx, convert_pptx_to_pdf
 
-# Zet hier je API-sleutels
-OPENAI_API_KEY = "sk-..."  # Vervang met jouw OpenAI sleutel
-UNSPLASH_ACCESS_KEY = "unsplash-..."  # Vervang met jouw Unsplash API key
+# ✅ Jouw OpenAI API-sleutel hier
+client = OpenAI(api_key="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")
 
-# Initialiseer OpenAI client
-client = OpenAI(api_key=OPENAI_API_KEY)
+# ❗ Vergeet je Unsplash-sleutel niet in te vullen
+UNSPLASH_ACCESS_KEY = "jouw_unsplash_key"
 
 st.set_page_config(page_title="AI PowerPoint Generator", layout="centered")
 st.title("🎓 AI PowerPoint Generator met Afbeeldingen en PDF")
@@ -20,10 +19,10 @@ export_pdf = st.checkbox("📤 Exporteer ook naar PDF")
 
 # Startknop
 if st.button("🚀 Genereer PowerPoint"):
-    if not OPENAI_API_KEY or not UNSPLASH_ACCESS_KEY:
-        st.error("❌ API-sleutels ontbreken.")
-    elif not topic.strip():
+    if not topic.strip():
         st.error("❌ Vul een onderwerp in.")
+    elif not UNSPLASH_ACCESS_KEY:
+        st.error("❌ UNSPLASH_ACCESS_KEY ontbreekt.")
     else:
         with st.spinner("💡 Genereert dia-inhoud..."):
             prompt = (
@@ -82,4 +81,3 @@ if st.button("🚀 Genereer PowerPoint"):
                         )
             except Exception as e:
                 st.error(f"❌ PDF-generatie mislukt: {e}")
-
