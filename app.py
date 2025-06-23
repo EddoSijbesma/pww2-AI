@@ -1,10 +1,10 @@
 import streamlit as st
 from pptx import Presentation
-from pptx.util import Pt, Inches
+from pptx.util import Pt
 from pptx.dml.color import RGBColor
 from io import BytesIO
 
-st.title("PowerPoint Generator ")
+st.title("PowerPoint Generator AI — 10 stappen")
 
 st.write("Plak hieronder je grote tekst. De app maakt 10 stappen-dia’s plus overige dia’s.")
 
@@ -12,8 +12,6 @@ grote_tekst = st.text_area("Voer hier je tekst in:", height=600)
 
 def set_slide_background(slide, rgb):
     """Zet een effen achtergrondkleur op de slide"""
-    from pptx.enum.shapes import MSO_SHAPE
-    from pptx.enum.shapes import MSO_FILL
     background = slide.background
     fill = background.fill
     fill.solid()
@@ -66,18 +64,11 @@ def generate_pptx(text):
         add_colored_slide(prs, "Werkschema en urenverantwoording", paragrafen[16:20], bg_color=(130, 190, 255))
 
     # Dia 7 t/m 16: Stap 1 t/m 10
-    # Voor elke stap 1 t/m 10 een dia maken.
-    # Voor elke stap verwachten we 7 paragrafen (beschrijving, waarom, leerpunt, instructies, let op!)
-    # Dus totaal 7*10 = 70 paragrafen nodig; we doen zoveel mogelijk
-
     start_index = 20
-    step_title_base = "Stap {} – Lezen en begrijpen van de werktekening"
-
     for i in range(1, 11):
         idx_start = start_index + (i - 1) * 7
         idx_end = idx_start + 7
         if len(paragrafen) >= idx_end:
-            # Titel per stap, kan ook dynamisch per stap naam aangepast worden
             title = f"Stap {i} – Lezen en begrijpen van de werktekening"
             add_colored_slide(prs, title, paragrafen[idx_start:idx_end], bg_color=(31, 73, 125))
         else:
@@ -108,5 +99,3 @@ if grote_tekst:
     )
 else:
     st.info("Plak een grote tekst om een PowerPoint te genereren.")
-
-
