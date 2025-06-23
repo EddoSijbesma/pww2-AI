@@ -25,16 +25,38 @@ with col2:
     inleverdatum = st.date_input("Inleverdatum")
 
 # === Stap 2: Dia's invoeren ===
-st.header("📝 Dia's invoeren (behalve dia 4 & 9 t/m 18 hebben vaste tekst)")
+st.header("📝 Dia's invoeren (behalve dia 4 en 9 t/m 18)")
 
 slides = []
+
+# Vragenlijst voor dia 9 t/m 18
+vragen = [
+    "Beschrijf hier wat je hebt gedaan.",
+    "Waarom heb je het zo gedaan.",
+    "Wat is was een leerpunt.",
+    "Instructies voor je collega (wat is belangrijk om op te letten?).",
+    "(Laat deze tekst op je foto’s aansluiten)",
+    "Je kunt hierbij ook pijltjes toevoegen",
+    "Voeg een “let op!” toe vanuit de deelopdracht."
+]
+
+# Dia 1 t/m 25 invoer (behalve dia 4)
 for i in range(1, 26):
     if i == 4:
-        continue  # Dia 4 gereserveerd
+        continue  # Dia 4 is aparte stap
     if 9 <= i <= 18:
-        # Vaste structuur, geen vrije invoer
-        st.markdown(f"**Dia {i}** heeft vaste tekstvelden (zie later in PPT)")
-        slides.append({"title": None, "content": None, "image": None})
+        st.markdown(f"### Dia {i} – Vaste vragen invullen")
+        antwoorden = []
+        for idx, vraag in enumerate(vragen):
+            antwoord = st.text_area(f"{vraag}", key=f"dia_{i}_vraag_{idx}")
+            antwoorden.append(antwoord)
+        image = st.file_uploader(f"📷 Afbeelding dia {i} (optioneel)", type=["png", "jpg", "jpeg"], key=f"img_{i}")
+        slides.append({
+            "title": f"Stap {i - 8}",
+            "content": antwoorden,
+            "image": image,
+            "is_vast_tekst": True
+        })
     else:
         with st.expander(f"Dia {i} (Vrije tekst en afbeelding)"):
             title = st.text_input(f"🔹 Titel dia {i}", key=f"title_{i}")
@@ -43,7 +65,8 @@ for i in range(1, 26):
             slides.append({
                 "title": title,
                 "content": content,
-                "image": image
+                "image": image,
+                "is_vast_tekst": False
             })
 
 # === Stap 3: Dia 4 - Risico's en maatregelen ===
@@ -106,6 +129,10 @@ def maak_pptx():
         p.font.size = Pt(18)
 
     # --- Dia 2 t/m 3 ---
+    # Omdat dia 4 ontbreekt, slides[0] = dia 1, slides[1] = dia 2, etc.
+    # Maar we hebben dia 4 eruit gehaald dus index verschuiving:
+    # Dia 2 = slides[1], Dia 3 = slides[2]
+    # Dia 1 is al gemaakt, dus hier slides[0] = dia 2, slides[1] = dia 3
     for slide_data in slides[:2]:
         if not slide_data["title"] and not slide_data["content"]:
             continue
@@ -185,14 +212,16 @@ def maak_pptx():
         if slide_data["image"]:
             slide.shapes.add_picture(slide_data["image"], Inches(7), Inches(1.5), Inches(2.5), Inches(2.5))
 
-    # --- Dia 9 t/m 18 (vaste tekstvelden per opdracht) ---
-    for i in range(9, 19):
+    # --- Dia 9 t/m 18 (vaste vragen ingevuld) ---
+    # Deze zitten in slides vanaf index 6 t/m 15 (want dia4 mist, en dia9 start bij slide index 6)
+    for idx, i in enumerate(range(9, 19)):
+        slide_data = slides[6 + idx]  # dia 9 t/m 18 in slides
         slide = prs.slides.add_slide(layout)
 
         title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(9), Inches(1))
         tf_title = title_box.text_frame
         p_title = tf_title.add_paragraph()
-        p_title.text = f"Stap {i - 8} – Lezen en begrijpen van de werktekening"
+        p_title.text = slide_data.get("title", f"Stap {i - 8}")
         p_title.font.size = Pt(28)
         p_title.font.bold = True
         p_title.font.color.rgb = RGBColor(0, 51, 102)
@@ -200,25 +229,18 @@ def maak_pptx():
         content_box = slide.shapes.add_textbox(Inches(0.5), Inches(1.2), Inches(9), Inches(5))
         tf = content_box.text_frame
 
-        vaste_teksten = [
-            ("Beschrijf hier wat je hebt gedaan.", True),
-            ("Waarom heb je het zo gedaan.", True),
-            ("Wat is was een leerpunt.", True),
-            ("Instructies voor je collega (wat is belangrijk om op te letten?).", True),
-            ("(Laat deze tekst op je foto’s aansluiten)", False),
-            ("Je kunt hierbij ook pijltjes toevoegen", False),
-            ("Voeg een “let op!” toe vanuit de deelopdracht.", True),
-        ]
-
-        for tekst, is_bold in vaste_teksten:
+        antwoorden = slide_data.get("content", [])
+        for antwoord in antwoorden:
             p = tf.add_paragraph()
-            p.text = tekst
+            p.text = antwoord if antwoord else "-"
             p.font.size = Pt(18)
-            p.font.bold = is_bold
-            p.space_after = Pt(8)
+            p.space_after = Pt(6)
+
+        if slide_data.get("image"):
+            slide.shapes.add_picture(slide_data["image"], Inches(7), Inches(1.5), Inches(2.5), Inches(2.5))
 
     # --- Dia 19 t/m 25 ---
-    for slide_data in slides[6:]:
+    for slide_data in slides[16:]:
         if not slide_data["title"] and not slide_data["content"]:
             continue
         slide = prs.slides.add_slide(layout)
@@ -252,3 +274,4 @@ if st.button("🎉 Genereer PowerPoint"):
         file_name="praktijkopdracht_presentatie.pptx",
         mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
     )
+
