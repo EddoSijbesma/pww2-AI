@@ -4,9 +4,20 @@ from pptx.util import Inches, Pt
 from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 from io import BytesIO
+import re
 
 st.set_page_config(page_title="PowerPoint Generator", layout="wide")
 st.title("📊 PowerPoint Generator Praktijkopdracht")
+
+# === Helper functie voor dummy AI extractie ===
+def extract_risico_maatregelen(text):
+    # Zoekt regels die met 'risico:' of 'maatregel:' beginnen, case insensitive
+    risicoes = re.findall(r'risico:\s*(.+)', text, flags=re.IGNORECASE)
+    maatregelen = re.findall(r'maatregel:\s*(.+)', text, flags=re.IGNORECASE)
+    risico_maatregelen = []
+    for i in range(min(len(risicoes), len(maatregelen))):
+        risico_maatregelen.append((risicoes[i], maatregelen[i]))
+    return risico_maatregelen
 
 # === Stap 1: Gegevens voor eerste dia ===
 st.header("🧾 Gegevens voor eerste dia")
@@ -40,7 +51,6 @@ vragen = [
     "Voeg een “let op!” toe vanuit de deelopdracht."
 ]
 
-# Dia 1 t/m 25 invoer (behalve dia 4)
 for i in range(1, 26):
     if i == 4:
         continue  # Dia 4 is aparte stap
@@ -77,14 +87,31 @@ st.markdown(
     "_En geef aan welke maatregelen je hebt getroffen om ze te beheersen._"
 )
 
-risico_maatregelen = []
+# Initialiseer risico_maatregelen in sessiestate
+if "risico_maatregelen" not in st.session_state:
+    st.session_state.risico_maatregelen = [("", "") for _ in range(8)]
+
 cols = st.columns(2)
 for i in range(8):
     with cols[0]:
-        risico = st.text_input(f"Risico {i+1}", key=f"risico_{i}")
+        risico = st.text_input(f"Risico {i+1}", value=st.session_state.risico_maatregelen[i][0], key=f"risico_{i}")
     with cols[1]:
-        maatregel = st.text_input(f"Maatregel {i+1}", key=f"maatregel_{i}")
-    risico_maatregelen.append((risico, maatregel))
+        maatregel = st.text_input(f"Maatregel {i+1}", value=st.session_state.risico_maatregelen[i][1], key=f"maatregel_{i}")
+    st.session_state.risico_maatregelen[i] = (risico, maatregel)
+
+# === AI Hulpmiddel ===
+st.header("🧠 AI Hulpmiddel: Automatisch risico’s en maatregelen invullen")
+
+ai_tekst = st.text_area("Voer hier een uitgebreide tekst in, bijvoorbeeld projectbeschrijving of analyse met risico’s en maatregelen")
+
+if st.button("🤖 Vul risico’s en maatregelen automatisch in"):
+    auto_risico_maatregelen = extract_risico_maatregelen(ai_tekst)
+    if auto_risico_maatregelen:
+        for i in range(min(len(auto_risico_maatregelen), len(st.session_state.risico_maatregelen))):
+            st.session_state.risico_maatregelen[i] = auto_risico_maatregelen[i]
+        st.success("Risico’s en maatregelen automatisch ingevuld!")
+    else:
+        st.warning("Geen risico’s en maatregelen gevonden in de tekst.")
 
 # === Stap 4: PowerPoint genereren ===
 def maak_pptx():
@@ -179,8 +206,8 @@ def maak_pptx():
         cell.text_frame.paragraphs[0].font.bold = True
         cell.text_frame.paragraphs[0].font.size = Pt(16)
 
-    # Vul tabel
-    for i, (risico, maatregel) in enumerate(risico_maatregelen):
+    # Vul tabel met data uit sessiestate
+    for i, (risico, maatregel) in enumerate(st.session_state.risico_maatregelen):
         table.cell(i+1, 0).text = risico if risico else ""
         table.cell(i+1, 1).text = maatregel if maatregel else ""
         for col in range(cols):
@@ -210,7 +237,7 @@ def maak_pptx():
 
     # --- Dia 9 t/m 18 (vaste vragen ingevuld) ---
     for idx, i in enumerate(range(9, 19)):
-        slide_data = slides[6 + idx]  # dia 9 t/m 18 in slides
+        slide_data = slides[6 + idx]
         slide = prs.slides.add_slide(layout)
 
         title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(9), Inches(1))
@@ -255,18 +282,12 @@ def maak_pptx():
         if slide_data["image"]:
             slide.shapes.add_picture(slide_data["image"], Inches(7), Inches(1.5), Inches(2.5), Inches(2.5))
 
-    output = BytesIO()
-    prs.save(output)
-    output.seek(0)
-    return output
+    # --- Return bestand als bytes ---
+    pptx_bytes = BytesIO()
+    prs.save(pptx_bytes)
+    pptx_bytes.seek(0)
+    return pptx_bytes
 
-if st.button("🎉 Genereer PowerPoint"):
-    pptx_bestand = maak_pptx()
-    st.success("✅ PowerPoint gegenereerd!")
-    st.download_button(
-        label="📥 Download PowerPoint",
-        data=pptx_bestand,
-        file_name="praktijkopdracht_presentatie.pptx",
-        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    )
-
+if st.button("📥 Genereer PowerPoint"):
+    pptx_file = maak_pptx()
+    st.download_button("Download PowerPoint bestand", pptx_file, file_name="praktijkopdracht.pptx", mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
