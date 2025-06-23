@@ -7,7 +7,7 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
 # Speciale code die je wil gebruiken
-SPECIAL_CODE = "5euro!"
+SPECIAL_CODE = "5euro"
 
 if not st.session_state.logged_in:
     st.title("Inloggen vereist")
