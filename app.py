@@ -1,22 +1,3 @@
-Top! Je wil dus een simpele Streamlit-app waar je één grote tekst in plakt, en dat de AI dat automatisch splitst over de verschillende dia’s en velden — en daarna een PowerPoint genereert.
-
-Ik maak een basisversie voor je waarbij:
-
-* Je grote tekst invult
-* De tekst via GPT wordt geparsed en verdeeld over de onderdelen (zoals “Naam student”, “Wat heb je gemaakt”, “Risico’s” etc.)
-* Daarna vult het script die velden in de PowerPoint in
-
----
-
-### Belangrijk:
-
-Om dit te doen heb je een OpenAI API key nodig. Je kunt die [hier aanvragen](https://platform.openai.com/account/api-keys). Zet ‘m in je `.env` of voer hem in via de app.
-
----
-
-### Hier is een voorbeeld van zo’n Streamlit-app:
-
-```python
 import streamlit as st
 from pptx import Presentation
 from pptx.util import Pt
@@ -24,9 +5,9 @@ from pptx.enum.text import PP_ALIGN
 from io import BytesIO
 import openai
 import os
+import json
 
-# Zet hier je OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("OPENAI_API_KEY")  # Zorg dat je hier je API key hebt staan
 
 def add_textbox(slide, text, left, top, width, height, font_size=12, bold=False):
     txBox = slide.shapes.add_textbox(left, top, width, height)
@@ -39,45 +20,43 @@ def add_textbox(slide, text, left, top, width, height, font_size=12, bold=False)
     return txBox
 
 def parse_text_to_fields(text):
-    # Prompt om AI te vragen de lap tekst te verdelen over velden
     prompt = f"""
-    Je krijgt een grote tekst van een praktijkopdracht. Verdeel deze informatie in een JSON object met de volgende velden:
+Je krijgt een grote tekst van een praktijkopdracht. Verdeel deze informatie in een JSON object met de volgende velden:
 
-    {{
-      "naam_student": "...",
-      "studenten_nummer": "...",
-      "naam_project": "...",
-      "locatie_project": "...",
-      "leerbedrijf": "...",
-      "leermeester": "...",
-      "inleverdatum": "...",
-      "praktijkopdracht": {{
-        "wat_heb_je_gemaakt": "...",
-        "waarom": "...",
-        "type_werk": "...",
-        "werksituatie": "...",
-        "groot_ploeg": "..."
-      }},
-      "risicos": [
-        {{"risico": "...", "maatregel": "..."}},
-        {{"risico": "...", "maatregel": "..."}}
-      ],
-      "materiaalstaat": [
-        {{"materiaal": "...", "maat": "...", "aantal": "..."}}
-      ],
-      "gereedschapslijst": [
-        {{"gereedschap": "...", "gebruikt_voor": "..."}}
-      ]
-    }}
+{{
+  "naam_student": "...",
+  "studenten_nummer": "...",
+  "naam_project": "...",
+  "locatie_project": "...",
+  "leerbedrijf": "...",
+  "leermeester": "...",
+  "inleverdatum": "...",
+  "praktijkopdracht": {{
+    "wat_heb_je_gemaakt": "...",
+    "waarom": "...",
+    "type_werk": "...",
+    "werksituatie": "...",
+    "groot_ploeg": "..."
+  }},
+  "risicos": [
+    {{"risico": "...", "maatregel": "..."}},
+    {{"risico": "...", "maatregel": "..."}}
+  ],
+  "materiaalstaat": [
+    {{"materiaal": "...", "maat": "...", "aantal": "..."}}
+  ],
+  "gereedschapslijst": [
+    {{"gereedschap": "...", "gebruikt_voor": "..."}}
+  ]
+}}
 
-    Hier is de tekst:
-    \"\"\"
-    {text}
-    \"\"\"
+Hier is de tekst:
+\"\"\"
+{text}
+\"\"\"
 
-    Geef alleen het JSON object terug.
-    """
-
+Geef alleen het JSON object terug.
+"""
     response = openai.ChatCompletion.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
@@ -90,7 +69,6 @@ def parse_text_to_fields(text):
 def create_presentation(data):
     prs = Presentation()
 
-    # DIA 1: Gegevens
     slide = prs.slides.add_slide(prs.slide_layouts[5])
     add_textbox(slide, "Gegevens", Pt(50), Pt(20), Pt(600), Pt(40), font_size=24, bold=True)
 
@@ -105,7 +83,6 @@ def create_presentation(data):
     )
     add_textbox(slide, content, Pt(50), Pt(80), Pt(600), Pt(200), font_size=14)
 
-    # DIA 2: Praktijkopdracht
     slide = prs.slides.add_slide(prs.slide_layouts[5])
     add_textbox(slide, "Welke praktijkopdracht heb je gemaakt?", Pt(50), Pt(20), Pt(600), Pt(40), font_size=20, bold=True)
 
@@ -124,7 +101,6 @@ def create_presentation(data):
         add_textbox(slide, text, Pt(50), Pt(top), Pt(600), Pt(60), font_size=12)
         top += 70
 
-    # DIA 3: Risico's
     slide = prs.slides.add_slide(prs.slide_layouts[5])
     add_textbox(slide, "Beschrijf de risico’s bij deze praktijkopdracht\n(en de genomen maatregelen)", Pt(50), Pt(20), Pt(600), Pt(40), font_size=20, bold=True)
 
@@ -148,7 +124,6 @@ def create_presentation(data):
         add_textbox(slide, risico, lefts[0], tops[i], widths[0], heights, font_size=12)
         add_textbox(slide, maatregel, lefts[1], tops[i], widths[1], heights, font_size=12)
 
-    # DIA 4: Materiaalstaat
     slide = prs.slides.add_slide(prs.slide_layouts[5])
     add_textbox(slide, "Materiaalstaat", Pt(50), Pt(20), Pt(600), Pt(40), font_size=20, bold=True)
 
@@ -172,7 +147,6 @@ def create_presentation(data):
         add_textbox(slide, maat, lefts[1], Pt(80 + i*25), Pt(100), Pt(25), font_size=12)
         add_textbox(slide, aantal, lefts[2], Pt(80 + i*25), Pt(100), Pt(25), font_size=12)
 
-    # DIA 5: Gereedschapslijst
     slide = prs.slides.add_slide(prs.slide_layouts[5])
     add_textbox(slide, "Gereedschapslijst", Pt(50), Pt(20), Pt(600), Pt(40), font_size=20, bold=True)
 
@@ -190,5 +164,33 @@ def create_presentation(data):
         else:
             naam = ""
             gebruikt_voor = ""
-        add_textbox(slide, naam, lefts[0], Pt(80 + i*25), Pt(280),
-```
+        add_textbox(slide, naam, lefts[0], Pt(80 + i*25), Pt(280), Pt(25), font_size=12)
+        add_textbox(slide, gebruikt_voor, lefts[1], Pt(80 + i*25), Pt(280), Pt(25), font_size=12)
+
+    output = BytesIO()
+    prs.save(output)
+    output.seek(0)
+    return output
+
+st.title("PowerPoint Generator van Lap Tekst")
+
+text = st.text_area("Plak hier je grote tekst van de praktijkopdracht", height=400)
+
+if st.button("Genereer PowerPoint"):
+    if not text.strip():
+        st.error("Voer eerst wat tekst in.")
+    else:
+        with st.spinner("Bezig met verwerken..."):
+            try:
+                json_str = parse_text_to_fields(text)
+                data = json.loads(json_str)
+                pptx_io = create_presentation(data)
+                st.success("PowerPoint is aangemaakt!")
+                st.download_button(
+                    label="Download PowerPoint",
+                    data=pptx_io,
+                    file_name="praktijkopdracht.pptx",
+                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                )
+            except Exception as e:
+                st.error(f"Er ging iets mis: {e}")
