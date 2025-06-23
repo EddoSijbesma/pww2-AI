@@ -1,101 +1,66 @@
 import streamlit as st
-from pptx import Presentation
-from pptx.util import Pt
-from pptx.dml.color import RGBColor
-from io import BytesIO
 
-st.title("PowerPoint Generator AI — 10 stappen")
+st.title("Praktijkopdracht Instructieboek Generator")
 
-st.write("Plak hieronder je grote tekst. De app maakt 10 stappen-dia’s plus overige dia’s.")
+st.header("📋 Gegevens")
+naam = st.text_input("Naam student")
+studentnummer = st.text_input("Studentnummer")
+projectnaam = st.text_input("Naam project")
+locatie = st.text_input("Locatie project")
+leerbedrijf = st.text_input("Leerbedrijf")
+leermeester = st.text_input("Leermeester")
+inleverdatum = st.date_input("Inleverdatum")
 
-grote_tekst = st.text_area("Voer hier je tekst in:", height=600)
+st.file_uploader("Upload hier foto's van jezelf tijdens het werk", accept_multiple_files=True)
 
-def set_slide_background(slide, rgb):
-    """Zet een effen achtergrondkleur op de slide"""
-    background = slide.background
-    fill = background.fill
-    fill.solid()
-    fill.fore_color.rgb = RGBColor(*rgb)
+st.header("🛠️ Over de praktijkopdracht")
+opdracht = st.text_area("Welke praktijkopdracht heb je gemaakt?")
+wat_gemaakt = st.text_area("Wat heb je gemaakt?")
+waarom_gemaakt = st.text_area("Waarom heb je deze praktijkopdracht gekozen?")
+type_werk = st.selectbox("Wat voor type werk was het?", ["Nieuwbouw", "Aanbouw", "Renovatie", "Onderhoud", "Anders"])
+werksituatie = st.text_area("Hoe was de werksituatie? (bijv. samenwerking, tijdsdruk, weer)")
+ploeggrootte = st.text_input("Hoe groot was je ploeg?")
 
-def add_colored_slide(prs, title, content_lines, bg_color=(91, 155, 213)):
-    slide_layout = prs.slide_layouts[1]  # Titel + inhoud
-    slide = prs.slides.add_slide(slide_layout)
-    set_slide_background(slide, bg_color)
-    slide.shapes.title.text = title
+st.file_uploader("Upload hier foto’s van het eindresultaat", accept_multiple_files=True)
 
-    text_frame = slide.shapes.placeholders[1].text_frame
-    text_frame.clear()
-    for line in content_lines:
-        p = text_frame.add_paragraph()
-        p.text = line
-        p.font.size = Pt(14)
-        p.font.color.rgb = RGBColor(255, 255, 255)  # wit tekst
+st.header("⚠️ Risico’s en maatregelen")
+risicos = st.text_area("Beschrijf de risico’s bij deze praktijkopdracht")
+maatregelen = st.text_area("Welke maatregelen heb je getroffen?")
 
-    return slide
+st.header("📐 Werktekening")
+st.file_uploader("Upload hier je werktekening", type=["jpg", "png", "pdf"])
 
-def generate_pptx(text):
-    prs = Presentation()
+st.header("🧰 Materiaal en gereedschap")
+materialen = st.text_area("Materiaalstaat")
+gereedschap = st.text_area("Gereedschapslijst")
+werkuur = st.text_area("Werkschema en urenverantwoording")
 
-    # Split op paragrafen (dubbele enters)
-    paragrafen = [p.strip() for p in text.split('\n\n') if p.strip()]
+# Dynamisch stappenplan
+st.header("🪜 Stappenplan")
+for i in range(1, 11):
+    with st.expander(f"Stap {i}"):
+        st.text_input(f"Stap {i} – Titel", key=f"stap{i}_titel")
+        st.text_area(f"Wat heb je gedaan?", key=f"stap{i}_wat")
+        st.text_area(f"Waarom heb je het zo gedaan?", key=f"stap{i}_waarom")
+        st.text_area(f"Wat was een leerpunt?", key=f"stap{i}_leer")
+        st.text_area(f"Instructies voor je collega", key=f"stap{i}_instructie")
+        st.text_area(f"Let op!", key=f"stap{i}_letop")
+        st.file_uploader("Voeg hier foto's toe", accept_multiple_files=True, key=f"stap{i}_foto")
 
-    # Dia 1: Gegevens
-    if len(paragrafen) > 0:
-        add_colored_slide(prs, "Gegevens", paragrafen[0].split('\n'), bg_color=(31, 73, 125))
+st.header("🔍 Reflectie: Persoonlijk")
+st.text_area("Hoeveel hulp had je nodig en wat kon je zelfstandig?")
+st.text_area("Wanneer stuurde een collega je bij?")
+st.text_area("Welke tips heb je gekregen?")
+st.text_area("Wat waren je leerpunten?")
+st.text_area("Wat waren je sterke punten?")
 
-    # Dia 2: Praktijkopdracht
-    if len(paragrafen) > 6:
-        add_colored_slide(prs, "Praktijkopdracht", paragrafen[1:6], bg_color=(79, 129, 189))
+st.header("👥 Reflectie: Samenwerken")
+st.text_area("Wat werd er van je verwacht?")
+st.text_area("Wat heb je zelfstandig gedaan?")
+st.text_area("Wat zou je de volgende keer anders doen?")
+st.text_area("Wat wil je nog leren?")
+st.text_area("Tips van je collega?")
 
-    # Dia 3: Risico’s en maatregelen
-    if len(paragrafen) > 8:
-        add_colored_slide(prs, "Risico’s en maatregelen", paragrafen[6:8], bg_color=(91, 155, 213))
-
-    # Dia 4: Materiaalstaat
-    if len(paragrafen) > 12:
-        add_colored_slide(prs, "Materiaalstaat", paragrafen[8:12], bg_color=(104, 161, 230))
-
-    # Dia 5: Gereedschapslijst
-    if len(paragrafen) > 16:
-        add_colored_slide(prs, "Gereedschapslijst", paragrafen[12:16], bg_color=(117, 176, 247))
-
-    # Dia 6: Werkschema en urenverantwoording
-    if len(paragrafen) > 20:
-        add_colored_slide(prs, "Werkschema en urenverantwoording", paragrafen[16:20], bg_color=(130, 190, 255))
-
-    # Dia 7 t/m 16: Stap 1 t/m 10
-    start_index = 20
-    for i in range(1, 11):
-        idx_start = start_index + (i - 1) * 7
-        idx_end = idx_start + 7
-        if len(paragrafen) >= idx_end:
-            title = f"Stap {i} – Lezen en begrijpen van de werktekening"
-            add_colored_slide(prs, title, paragrafen[idx_start:idx_end], bg_color=(31, 73, 125))
-        else:
-            break
-
-    # Dia 17: Reflectie: persoonlijk
-    ref_pers_index = start_index + 7 * 10
-    if len(paragrafen) > ref_pers_index + 7:
-        add_colored_slide(prs, "Reflectie: persoonlijk", paragrafen[ref_pers_index:ref_pers_index+7], bg_color=(79, 129, 189))
-
-    # Dia 18: Reflectie: Uitvoering en samenwerken
-    ref_uitv_index = ref_pers_index + 7
-    if len(paragrafen) > ref_uitv_index + 5:
-        add_colored_slide(prs, "Reflectie: Uitvoering en samenwerken", paragrafen[ref_uitv_index:ref_uitv_index+5], bg_color=(91, 155, 213))
-
-    bio = BytesIO()
-    prs.save(bio)
-    bio.seek(0)
-    return bio
-
-if grote_tekst:
-    pptx_file = generate_pptx(grote_tekst)
-    st.download_button(
-        label="Download PowerPoint",
-        data=pptx_file,
-        file_name="praktijkopdracht.pptx",
-        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    )
-else:
-    st.info("Plak een grote tekst om een PowerPoint te genereren.")
+st.header("📤 Afronding")
+if st.button("Genereer concept instructieboek"):
+    st.success("Concept gegenereerd! (functie om alles samen te voegen en te downloaden kan hier nog worden toegevoegd.)")
