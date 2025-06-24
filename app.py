@@ -1,6 +1,7 @@
 import streamlit as st
 from pptx import Presentation
 from pptx.dml.color import RGBColor
+from pptx.util import Pt
 from io import BytesIO
 import datetime
 
@@ -86,21 +87,23 @@ def vervang_tekst(tekst, vervangingen):
 def genereer_powerpoint(vervangingen, template_path="tamplatepraktijkopdracht2.pptx"):
     prs = Presentation(template_path)
     for slide in prs.slides:
-        # Titel tekst aanpassen + kleur
+        # Titel tekst aanpassen
         if slide.shapes.title and slide.shapes.title.has_text_frame:
             titel = slide.shapes.title
             titel.text = vervang_tekst(titel.text, vervangingen)
             for para in titel.text_frame.paragraphs:
                 for run in para.runs:
                     run.font.color.rgb = geselecteerde_kleur
+                    run.font.size = Pt(20)  # Titels: 20 pt
 
-        # Inhoudsvakken tekst aanpassen + kleur
+        # Inhoud tekst aanpassen
         for shape in slide.shapes:
             if shape.has_text_frame and shape != slide.shapes.title:
                 shape.text = vervang_tekst(shape.text, vervangingen)
                 for para in shape.text_frame.paragraphs:
                     for run in para.runs:
                         run.font.color.rgb = geselecteerde_kleur
+                        run.font.size = Pt(12)  # Tekst: 12 pt
 
     buffer = BytesIO()
     prs.save(buffer)
@@ -161,4 +164,3 @@ if st.button("📥 Genereer & Download PowerPoint (.pptx)"):
         )
     except Exception as e:
         st.error(f"Er is een fout opgetreden: {e}")
-
