@@ -71,7 +71,7 @@ def vervang_tekst(tekst, vervangingen):
         tekst = tekst.replace(f"{{{{{sleutel}}}}}", str(waarde))
     return tekst
 
-def genereer_powerpoint(vervangingen, template_path="sjabloon.pptx.pptx"):
+def genereer_powerpoint(vervangingen, template_path="tamplatepraktijkopdracht.pptx"):
     prs = Presentation(template_path)
     for slide in prs.slides:
         for shape in slide.shapes:
