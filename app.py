@@ -5,31 +5,33 @@ from pptx.util import Pt
 from io import BytesIO
 import datetime
 
-# --- IMPORT VOOR LOKAAL AI MODEL ---
-from gpt4all import GPT4All
+# --- AI ASSISTENT IN SIDEBAR (Dummy-versie zonder GPT4All) ---
+st.sidebar.header("🤖 AI Assistent (demo)")
 
-# --- Laad het GPT4All model één keer (zorg dat het modelbestand lokaal staat!) ---
-@st.cache_resource(show_spinner=False)
-def load_model():
-    return GPT4All("ggml-gpt4all-j-v1.3-groovy.bin")
-
-model = load_model()
-
-# --- TITEL ---
-st.title("Stappenplan Maker Gemaakt door Eddo.S")
-
-# --- AI ASSISTENT IN SIDEBAR ---
-st.sidebar.header("🤖 AI Assistent")
 ai_input = st.sidebar.text_area("Stel je vraag aan de AI:")
+
+def dummy_ai_response(vraag: str) -> str:
+    vraag = vraag.lower()
+    if "ppt" in vraag:
+        return "Je kunt onderaan de pagina een PowerPoint genereren."
+    elif "veiligheid" in vraag or "risico" in vraag:
+        return "Denk aan PBM's zoals helm, bril en handschoenen. Zorg ook voor een veilige werkplek."
+    elif "stap" in vraag:
+        return "Beschrijf per stap wat je doet, waarom, en waar je op moet letten."
+    elif "reflectie" in vraag:
+        return "Wees eerlijk over wat je hebt geleerd, wat goed ging en wat beter kon."
+    else:
+        return "Dat is een goede vraag! Probeer duidelijk en concreet te zijn in je beschrijving."
 
 if st.sidebar.button("Vraag AI om hulp"):
     if ai_input.strip() == "":
         st.sidebar.warning("Typ iets om de AI te vragen.")
     else:
-        with st.sidebar.spinner("AI denkt na..."):
-            ai_response = model.generate(ai_input)
         st.sidebar.markdown("### AI antwoord:")
-        st.sidebar.write(ai_response)
+        st.sidebar.write(dummy_ai_response(ai_input))
+
+# --- TITEL ---
+st.title("Stappenplan Maker Gemaakt door Eddo.S")
 
 # === KLEURKEUZE ===
 kleur = st.selectbox("Kies een kleurthema", ["Blauw", "Groen", "Rood", "Grijs"])
@@ -110,24 +112,20 @@ def vervang_tekst(tekst, vervangingen):
 def genereer_powerpoint(vervangingen, template_path="tamplatepraktijkopdracht2.pptx"):
     prs = Presentation(template_path)
     for slide in prs.slides:
-        # Titel tekst aanpassen
         if slide.shapes.title and slide.shapes.title.has_text_frame:
             titel = slide.shapes.title
             titel.text = vervang_tekst(titel.text, vervangingen)
             for para in titel.text_frame.paragraphs:
                 for run in para.runs:
                     run.font.color.rgb = geselecteerde_kleur
-                    run.font.size = Pt(20)  # Titels: 20 pt
-
-        # Inhoud tekst aanpassen
+                    run.font.size = Pt(20)
         for shape in slide.shapes:
             if shape.has_text_frame and shape != slide.shapes.title:
                 shape.text = vervang_tekst(shape.text, vervangingen)
                 for para in shape.text_frame.paragraphs:
                     for run in para.runs:
                         run.font.color.rgb = geselecteerde_kleur
-                        run.font.size = Pt(12)  # Tekst: 12 pt
-
+                        run.font.size = Pt(12)
     buffer = BytesIO()
     prs.save(buffer)
     buffer.seek(0)
@@ -135,7 +133,6 @@ def genereer_powerpoint(vervangingen, template_path="tamplatepraktijkopdracht2.p
 
 st.header("📤 Afronding en Download")
 
-# === VERZAMEL VELDEN ===
 vervangingen = {
     "naam": naam,
     "studentnummer": studentnummer,
@@ -187,3 +184,4 @@ if st.button("📥 Genereer & Download PowerPoint (.pptx)"):
         )
     except Exception as e:
         st.error(f"Er is een fout opgetreden: {e}")
+
