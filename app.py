@@ -164,4 +164,12 @@ with col2:
 
     if st.button("📥 Genereer & Download PowerPoint (.pptx)"):
         try:
-
+            bestand = genereer_powerpoint(vervangingen)
+            st.download_button(
+                label="⬇️ Download PowerPoint",
+                data=bestand,
+                file_name="praktijkopdracht.pptx",
+                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            )
+        except Exception as e:
+            st.error(f"Er is een fout opgetreden: {e}")
