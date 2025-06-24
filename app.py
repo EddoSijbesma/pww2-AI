@@ -8,7 +8,7 @@ import datetime
 
 # --- LAYOUT MET LINKS CHATBOT EN RECHTS APP ---
 
-col1, col2 = st.columns([4, 3])  # linker kolom smaller
+col1, col2 = st.columns([2, 3])  # linker kolom smaller
 
 with col1:
     st.header("🤖 AI Assistent")
