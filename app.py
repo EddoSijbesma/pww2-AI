@@ -2,24 +2,8 @@ import streamlit as st
 from pptx import Presentation
 from io import BytesIO
 
-# --- LOGIN SCHERM ---
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
 
-SPECIAL_CODE = "mijngeheimecode123"
 
-def login():
-    code_input = st.text_input("Voer de speciale code in om door te gaan:", type="password", key="login_code")
-    if st.button("Inloggen"):
-        if code_input == SPECIAL_CODE:
-            st.session_state.logged_in = True
-        else:
-            st.error("Verkeerde code, probeer opnieuw.")
-
-if not st.session_state.logged_in:
-    st.title("Inloggen vereist")
-    login()
-else:
     # --- JOUW HUIDIGE APP ---  
     st.title("Stappenplan Maker Gemaakt door Eddo.S")
 
