@@ -1,10 +1,22 @@
 import streamlit as st
 from pptx import Presentation
+from pptx.dml.color import RGBColor
 from io import BytesIO
 import datetime
 
-# --- JOUW HUIDIGE APP ---
+# --- TITEL ---
 st.title("Stappenplan Maker Gemaakt door Eddo.S")
+
+# === KLEURKEUZE ===
+kleur = st.selectbox("Kies een kleurthema", ["Blauw", "Groen", "Rood", "Grijs"])
+
+kleurmap = {
+    "Blauw": RGBColor(0, 112, 192),
+    "Groen": RGBColor(0, 176, 80),
+    "Rood": RGBColor(192, 0, 0),
+    "Grijs": RGBColor(89, 89, 89)
+}
+geselecteerde_kleur = kleurmap.get(kleur, RGBColor(0, 112, 192))
 
 # === FORMULIER ===
 st.header("📋 Gegevens")
@@ -74,12 +86,22 @@ def vervang_tekst(tekst, vervangingen):
 def genereer_powerpoint(vervangingen, template_path="tamplatepraktijkopdracht2.pptx"):
     prs = Presentation(template_path)
     for slide in prs.slides:
+        # Titel tekst aanpassen + kleur
+        if slide.shapes.title and slide.shapes.title.has_text_frame:
+            titel = slide.shapes.title
+            titel.text = vervang_tekst(titel.text, vervangingen)
+            for para in titel.text_frame.paragraphs:
+                for run in para.runs:
+                    run.font.color.rgb = geselecteerde_kleur
+
+        # Inhoudsvakken tekst aanpassen + kleur
         for shape in slide.shapes:
-            if shape.has_text_frame:
-                originele_tekst = shape.text
-                nieuwe_tekst = vervang_tekst(originele_tekst, vervangingen)
-                if originele_tekst != nieuwe_tekst:
-                    shape.text = nieuwe_tekst
+            if shape.has_text_frame and shape != slide.shapes.title:
+                shape.text = vervang_tekst(shape.text, vervangingen)
+                for para in shape.text_frame.paragraphs:
+                    for run in para.runs:
+                        run.font.color.rgb = geselecteerde_kleur
+
     buffer = BytesIO()
     prs.save(buffer)
     buffer.seek(0)
@@ -87,6 +109,7 @@ def genereer_powerpoint(vervangingen, template_path="tamplatepraktijkopdracht2.p
 
 st.header("📤 Afronding en Download")
 
+# === VERZAMEL VELDEN ===
 vervangingen = {
     "naam": naam,
     "studentnummer": studentnummer,
@@ -115,7 +138,8 @@ vervangingen = {
     "samen_zelfstandig": st.session_state.get("samen_zelfstandig", ""),
     "samen_anders": st.session_state.get("samen_anders", ""),
     "samen_leren": st.session_state.get("samen_leren", ""),
-    "samen_tips": st.session_state.get("samen_tips", "")
+    "samen_tips": st.session_state.get("samen_tips", ""),
+    "kleur": kleur
 }
 
 for i in range(1, 11):
@@ -137,3 +161,4 @@ if st.button("📥 Genereer & Download PowerPoint (.pptx)"):
         )
     except Exception as e:
         st.error(f"Er is een fout opgetreden: {e}")
+
