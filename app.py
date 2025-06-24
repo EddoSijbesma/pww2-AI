@@ -4,38 +4,55 @@ from pptx.dml.color import RGBColor
 from pptx.util import Pt
 from io import BytesIO
 import datetime
+import os
+import requests
+from dotenv import load_dotenv
 
-# --- AI ASSISTENT IN SIDEBAR (Dummy-versie zonder GPT4All) ---
-st.sidebar.header("🤖 AI Assistent (demo)")
+# === ENV ===
+load_dotenv()
+AZURE_API_KEY = os.getenv("AZURE_OPENAI_KEY")
+AZURE_API_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
+AZURE_MODEL = os.getenv("AZURE_OPENAI_MODEL", "openai/gpt-4.1")
 
-ai_input = st.sidebar.text_area("Stel je vraag aan de AI:")
+# === AI ASSISTENT VIA AZURE OPENAI ===
+def vraag_ai_azure(vraag: str) -> str:
+    try:
+        response = requests.post(
+            f"{AZURE_API_ENDPOINT}/chat/completions",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {AZURE_API_KEY}"
+            },
+            json={
+                "messages": [
+                    {"role": "system", "content": ""},
+                    {"role": "user", "content": vraag}
+                ],
+                "model": AZURE_MODEL,
+                "temperature": 0.7,
+                "top_p": 1
+            },
+            timeout=15
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"⚠️ Fout bij AI-aanvraag: {e}"
 
-def dummy_ai_response(vraag: str) -> str:
-    vraag = vraag.lower()
-    if "ppt" in vraag:
-        return "Je kunt onderaan de pagina een PowerPoint genereren."
-    elif "veiligheid" in vraag or "risico" in vraag:
-        return "Denk aan PBM's zoals helm, bril en handschoenen. Zorg ook voor een veilige werkplek."
-    elif "stap" in vraag:
-        return "Beschrijf per stap wat je doet, waarom, en waar je op moet letten."
-    elif "reflectie" in vraag:
-        return "Wees eerlijk over wat je hebt geleerd, wat goed ging en wat beter kon."
-    else:
-        return "Dat is een goede vraag! Probeer duidelijk en concreet te zijn in je beschrijving."
-
-if st.sidebar.button("Vraag AI om hulp"):
-    if ai_input.strip() == "":
-        st.sidebar.warning("Typ iets om de AI te vragen.")
-    else:
-        st.sidebar.markdown("### AI antwoord:")
-        st.sidebar.write(dummy_ai_response(ai_input))
-
-# --- TITEL ---
+# === TITEL EN AI-SIDEBAR ===
 st.title("Stappenplan Maker Gemaakt door Eddo.S")
 
-# === KLEURKEUZE ===
-kleur = st.selectbox("Kies een kleurthema", ["Blauw", "Groen", "Rood", "Grijs"])
+st.sidebar.header("🤖 AI Assistent")
+user_prompt = st.sidebar.text_area("Stel je vraag aan de AI:")
 
+if user_prompt.strip() != "":
+    with st.sidebar.spinner("AI denkt na..."):
+        antwoord = vraag_ai_azure(user_prompt)
+        st.sidebar.markdown("### Antwoord:")
+        st.sidebar.write(antwoord)
+
+# === KLEURTHEMA ===
+kleur = st.selectbox("Kies een kleurthema", ["Blauw", "Groen", "Rood", "Grijs"])
 kleurmap = {
     "Blauw": RGBColor(0, 112, 192),
     "Groen": RGBColor(0, 176, 80),
@@ -44,7 +61,7 @@ kleurmap = {
 }
 geselecteerde_kleur = kleurmap.get(kleur, RGBColor(0, 112, 192))
 
-# === FORMULIER ===
+# === GEGEVENS ===
 st.header("📋 Gegevens")
 naam = st.text_input("Naam student")
 studentnummer = st.text_input("Studentnummer")
@@ -56,6 +73,7 @@ inleverdatum = st.date_input("Inleverdatum", datetime.date.today())
 
 st.file_uploader("Upload hier foto's van jezelf tijdens het werk", accept_multiple_files=True)
 
+# === PRAKTIJKOPDRACHT ===
 st.header("🛠️ Over de praktijkopdracht")
 opdracht = st.text_area("Welke praktijkopdracht heb je gemaakt?")
 wat_gemaakt = st.text_area("Wat heb je gemaakt?")
@@ -63,21 +81,24 @@ waarom_gemaakt = st.text_area("Waarom heb je deze praktijkopdracht gekozen?")
 type_werk = st.selectbox("Wat voor type werk was het?", ["Nieuwbouw", "Aanbouw", "Renovatie", "Onderhoud", "Anders"])
 werksituatie = st.text_area("Hoe was de werksituatie? (bijv. samenwerking, tijdsdruk, weer)")
 ploeggrootte = st.text_input("Hoe groot was je ploeg?")
-
 st.file_uploader("Upload hier foto’s van het eindresultaat", accept_multiple_files=True)
 
+# === RISICO ===
 st.header("⚠️ Risico’s en maatregelen")
 risicos = st.text_area("Beschrijf de risico’s bij deze praktijkopdracht")
 maatregelen = st.text_area("Welke maatregelen heb je getroffen?")
 
+# === WERKTEKENING ===
 st.header("📐 Werktekening")
 st.file_uploader("Upload hier je werktekening", type=["jpg", "png", "pdf"])
 
+# === MATERIAAL EN GEREEDSCHAP ===
 st.header("🧰 Materiaal en gereedschap")
 materialen = st.text_area("Materiaalstaat")
 gereedschap = st.text_area("Gereedschapslijst")
 werkuur = st.text_area("Werkschema en urenverantwoording")
 
+# === STAPPENPLAN ===
 st.header("🪜 Stappenplan")
 for i in range(1, 11):
     with st.expander(f"Stap {i}"):
@@ -89,6 +110,7 @@ for i in range(1, 11):
         st.text_area(f"Let op!", key=f"stap{i}_letop")
         st.file_uploader("Voeg hier foto's toe", accept_multiple_files=True, key=f"stap{i}_foto")
 
+# === REFLECTIE PERSOONLIJK ===
 st.header("🔍 Reflectie: Persoonlijk")
 st.text_area("Hoeveel hulp had je nodig en wat kon je zelfstandig?", key="reflectie_hulp")
 st.text_area("Wanneer stuurde een collega je bij?", key="reflectie_bijsturing")
@@ -96,6 +118,7 @@ st.text_area("Welke tips heb je gekregen?", key="reflectie_tips")
 st.text_area("Wat waren je leerpunten?", key="reflectie_leerpunt")
 st.text_area("Wat waren je sterke punten?", key="reflectie_sterk")
 
+# === REFLECTIE SAMENWERKEN ===
 st.header("👥 Reflectie: Samenwerken")
 st.text_area("Wat werd er van je verwacht?", key="samen_verwacht")
 st.text_area("Wat heb je zelfstandig gedaan?", key="samen_zelfstandig")
@@ -131,6 +154,7 @@ def genereer_powerpoint(vervangingen, template_path="tamplatepraktijkopdracht2.p
     buffer.seek(0)
     return buffer
 
+# === DOWNLOAD ===
 st.header("📤 Afronding en Download")
 
 vervangingen = {
@@ -184,4 +208,3 @@ if st.button("📥 Genereer & Download PowerPoint (.pptx)"):
         )
     except Exception as e:
         st.error(f"Er is een fout opgetreden: {e}")
-
