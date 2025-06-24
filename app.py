@@ -1,34 +1,19 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.util import Pt
 from io import BytesIO
 import datetime
 
-# --- AI ASSISTENT IN SIDEBAR (Dummy-versie zonder GPT4All) ---
-st.sidebar.header("🤖 AI Assistent (demo)")
+# --- AI ASSISTENT IN SIDEBAR (Botpress chatbot) ---
+st.sidebar.header("🤖 AI Assistent")
 
-ai_input = st.sidebar.text_area("Stel je vraag aan de AI:")
-
-def dummy_ai_response(vraag: str) -> str:
-    vraag = vraag.lower()
-    if "ppt" in vraag:
-        return "Je kunt onderaan de pagina een PowerPoint genereren."
-    elif "veiligheid" in vraag or "risico" in vraag:
-        return "Denk aan PBM's zoals helm, bril en handschoenen. Zorg ook voor een veilige werkplek."
-    elif "stap" in vraag:
-        return "Beschrijf per stap wat je doet, waarom, en waar je op moet letten."
-    elif "reflectie" in vraag:
-        return "Wees eerlijk over wat je hebt geleerd, wat goed ging en wat beter kon."
-    else:
-        return "Dat is een goede vraag! Probeer duidelijk en concreet te zijn in je beschrijving."
-
-if st.sidebar.button("Vraag AI om hulp"):
-    if ai_input.strip() == "":
-        st.sidebar.warning("Typ iets om de AI te vragen.")
-    else:
-        st.sidebar.markdown("### AI antwoord:")
-        st.sidebar.write(dummy_ai_response(ai_input))
+components.iframe(
+    "https://cdn.botpress.cloud/webchat/v3.0/shareable.html?configUrl=https://files.bpcontent.cloud/2025/06/24/17/20250624171752-G8O3V3TW.json",
+    height=600,
+    scrolling=True
+)
 
 # --- TITEL ---
 st.title("Stappenplan Maker Gemaakt door Eddo.S")
@@ -184,3 +169,4 @@ if st.button("📥 Genereer & Download PowerPoint (.pptx)"):
         )
     except Exception as e:
         st.error(f"Er is een fout opgetreden: {e}")
+
