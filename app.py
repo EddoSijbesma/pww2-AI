@@ -5,8 +5,31 @@ from pptx.util import Pt
 from io import BytesIO
 import datetime
 
+# --- IMPORT VOOR LOKAAL AI MODEL ---
+from gpt4all import GPT4All
+
+# --- Laad het GPT4All model één keer (zorg dat het modelbestand lokaal staat!) ---
+@st.cache_resource(show_spinner=False)
+def load_model():
+    return GPT4All("ggml-gpt4all-j-v1.3-groovy.bin")
+
+model = load_model()
+
 # --- TITEL ---
 st.title("Stappenplan Maker Gemaakt door Eddo.S")
+
+# --- AI ASSISTENT IN SIDEBAR ---
+st.sidebar.header("🤖 AI Assistent")
+ai_input = st.sidebar.text_area("Stel je vraag aan de AI:")
+
+if st.sidebar.button("Vraag AI om hulp"):
+    if ai_input.strip() == "":
+        st.sidebar.warning("Typ iets om de AI te vragen.")
+    else:
+        with st.sidebar.spinner("AI denkt na..."):
+            ai_response = model.generate(ai_input)
+        st.sidebar.markdown("### AI antwoord:")
+        st.sidebar.write(ai_response)
 
 # === KLEURKEUZE ===
 kleur = st.selectbox("Kies een kleurthema", ["Blauw", "Groen", "Rood", "Grijs"])
